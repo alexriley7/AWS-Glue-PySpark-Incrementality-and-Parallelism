@@ -57,7 +57,7 @@ class JobBase(object):
         self.sc.setLocalProperty("spark.scheduler.pool", str("1"))
         acc_by_sell_report_df = selected_df.groupBy('account_id', 'holder_name', "date").agg(sum("amount").alias("total")).repartition(1)
         acc_by_sell_report_dyf = DynamicFrame.fromDF(acc_by_sell_report_df, self.glue_context, "acc_by_sell_report_df")
-        self._save_output_to_s3(acc_by_sell_report_dyf, "acc_by_sell_report_df",
+        self._save_output_to_redshift(acc_by_sell_report_dyf, "acc_by_sell_report_df",
                                 "s3://s3-bucket-multithreading/sec_by_sell_report/")
 		# set to default
         self.sc.setLocalProperty("spark.scheduler.pool", None)
@@ -69,36 +69,10 @@ class JobBase(object):
         self.sc.setLocalProperty("spark.scheduler.pool", str("2"))
         secu_by_sell_report_df = selected_df.groupBy('security_id', 'security_name', "date").agg(sum("amount").alias("total")).repartition(1)
         secu_by_sell_report_dyf = DynamicFrame.fromDF(secu_by_sell_report_df, self.glue_context, "secu_by_sell_report_df")
-        self._save_output_to_s3(secu_by_sell_report_dyf, "secu_by_sell_report_df",
+        self._save_output_to_redshift(secu_by_sell_report_dyf, "secu_by_sell_report_df",
                                 "s3://s3-bucket-multithreading/acc_by_sell_report/")
 								# set to default
         self.logger.info("Completed security reports..")
-
-    def _save_output_to_s3(self, p_data_frame, p_name_of_dyanmic, p_location):
-        logger = self.glue_context.get_logger()
-        logger.info("Saving Data Frame {} in S3 at location {}".format(p_name_of_dyanmic, p_location))
-        self.glue_context.write_dynamic_frame.from_options(frame=p_data_frame, connection_type="s3", connection_options={p_location = "s3://s3-bucket-multithreading/"}, format="csv")
-        logger.info("Saved Data in S3 at location")
-
-
-    ########
-
-    # Script generated for node Amazon Redshift
-AmazonRedshift_node3 = glueContext.write_dynamic_frame.from_options(
-    frame=ChangeSchema_node2,
-    connection_type="redshift",
-    connection_options={
-        "redshiftTmpDir": "s3://aws-glue-assets-609272431185-us-east-1/temporary/",
-        "useConnectionProperties": "true",
-        "dbtable": "public.trial_registers",
-        "connectionName": "redshift-crawler",
-        "preactions": "CREATE TABLE IF NOT EXISTS public.trial_registers (phone INTEGER, last_name VARCHAR, subscribe_newsletter INTEGER, id INTEGER, subscription_type VARCHAR, first_name VARCHAR, email VARCHAR);",
-    },
-    transformation_ctx="AmazonRedshift_node3",
-)
-
-#########
-
 
     def _save_output_to_redshift(self, p_data_frame, p_name_of_dyanmic, p_location):
         logger = self.glue_context.get_logger()
@@ -113,22 +87,6 @@ AmazonRedshift_node3 = glueContext.write_dynamic_frame.from_options(
         logger.info("Saved Data in Redshift tables")
 
 
-######### new func
-
-
-    def __create_security_report(self, selected_df):
-        self.logger.info("Starting security reports..")
-		#  set pool local to 2 
-        self.sc.setLocalProperty("spark.scheduler.pool", str("2"))
-        secu_by_sell_report_df = selected_df.groupBy('security_id', 'security_name', "date").agg(sum("amount").alias("total")).repartition(1)
-        secu_by_sell_report_dyf = DynamicFrame.fromDF(secu_by_sell_report_df, self.glue_context, "secu_by_sell_report_df")
-        self._save_output_to_redshift(secu_by_sell_report_dyf, "secu_by_sell_report_df",
-                                "s3://s3-bucket-multithreading/acc_by_sell_report/")
-								# set to default
-        self.logger.info("Completed security reports..")
-
-
-####### new func for report
 
 
     def __start_spark_glue_context(self):
