@@ -81,6 +81,35 @@ class JobBase(object):
         logger.info("Saved Data in S3 at location")
 
 
+    ########
+
+    # Script generated for node Amazon Redshift
+AmazonRedshift_node3 = glueContext.write_dynamic_frame.from_options(
+    frame=ChangeSchema_node2,
+    connection_type="redshift",
+    connection_options={
+        "redshiftTmpDir": "s3://aws-glue-assets-609272431185-us-east-1/temporary/",
+        "useConnectionProperties": "true",
+        "dbtable": "public.trial_registers",
+        "connectionName": "redshift-crawler",
+        "preactions": "CREATE TABLE IF NOT EXISTS public.trial_registers (phone INTEGER, last_name VARCHAR, subscribe_newsletter INTEGER, id INTEGER, subscription_type VARCHAR, first_name VARCHAR, email VARCHAR);",
+    },
+    transformation_ctx="AmazonRedshift_node3",
+)
+
+#########
+
+
+    def _save_output_to_s3(self, p_data_frame, p_name_of_dyanmic, p_location):
+        logger = self.glue_context.get_logger()
+        logger.info("Saving Data Frame {} in S3 at location {}".format(p_name_of_dyanmic, p_location))
+        self.glue_context.write_dynamic_frame.from_options(frame=p_data_frame, connection_type="s3", connection_options={p_location = "s3://s3-bucket-multithreading/"}, format="csv")
+        logger.info("Saved Data in S3 at location")
+
+
+#########
+
+
 
     def __start_spark_glue_context(self):
         conf = SparkConf().setAppName("python_thread").set('spark.scheduler.mode', 'FAIR').set("spark.scheduler.allocation.file", self.fair_scheduler_config_file)
