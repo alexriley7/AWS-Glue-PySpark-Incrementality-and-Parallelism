@@ -25,45 +25,45 @@ class JobBase(object):
         self.logger.info("Starting Glue Threading job ")
     		
     		# reading of catalog tables
-        transactions_df = self.glue_context.create_dynamic_frame.from_catalog(database="glue_s3_test", table_name="transactions",
+        transactions_df = self.glue_context.create_dynamic_frame.from_catalog(database="mysql_to_redshift", table_name="trial_register__transaction",
                                                                                     redshift_tmp_dir=args["TempDir"],
                                                                                     transformation_ctx="datasource0")
-        account_df = self.glue_context.create_dynamic_frame.from_catalog(database="glue_s3_test", table_name="account",
+        users_df = self.glue_context.create_dynamic_frame.from_catalog(database="mysql_to_redshift", table_name="users__dimension",
                                                                                 redshift_tmp_dir=args["TempDir"],
                                                                                 transformation_ctx="datasource0")
         
-        securities_df = self.glue_context.create_dynamic_frame.from_catalog(database="glue_s3_test", table_name="securities",
+        subscriptions_df = self.glue_context.create_dynamic_frame.from_catalog(database="mysql_to_redshift", table_name="subscriptions__dimension",
                                                                                     redshift_tmp_dir=args["TempDir"],
                                                                                     transformation_ctx="datasource0")
 
 		# joining dataframes
-        transactions_df = transactions_df.rename_field('acount_id', 'trn_acount_id').rename_field('security_id', 'trn_security_id')
-        securities_df = securities_df.rename_field('name', 'security_name')
-        joined_df= Join.apply(Join.apply(transactions_df, account_df, 'acount_id', 'trn_acount_id'), securities_df, 'security_id', 'trn_security_id')
-        selected_df = SelectFields.apply(frame = joined_df, paths = ['transaction_id', 'account_id', 'security_id', "date","amount", "security_name","holder_name"] ).toDF()
+        transactions_df = transactions_df.rename_field('account_id', 'trn_account_id').rename_field('subscription_id', 'trn_subscription_id')
+        #securities_df = securities_df.rename_field('name', 'security_name')
+        joined_df= Join.apply(Join.apply(transactions_df, users_df, 'acount_id', 'trn_account_id'), subscriptions_df, 'subscription_id', 'trn_security_id')
+        selected_df = SelectFields.apply(frame = joined_df, paths = ['transaction_id', 'account_id', 'subscription_id', "paid_amount","register_date", "subscription_type","subscription_name","subscription_register_type","subscription_code","subscription_release","subscription_end"] ).toDF()
         selected_df.cache()
     		
         import concurrent.futures
 
         executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
             # calling method using Python thread
-        executor.submit(self.__create_security_report,sc=selected_df)
-        executor.submit(self.__create_account_report,sc=selected_df)
+        executor.submit(self.__create_subscriptions_report,sc=selected_df)
+        executor.submit(self.__create_accounts_report,sc=selected_df)
         self.logger.info("Completed Threading job")
 
-    def __create_account_report(self, selected_df):
+    def __create_users_report(self, selected_df):
         self.logger.info("Starting account reports..")
 		#  set pool local to 1
         self.sc.setLocalProperty("spark.scheduler.pool", str("1"))
-        acc_by_sell_report_df = selected_df.groupBy('account_id', 'holder_name', "date").agg(sum("amount").alias("total")).repartition(1)
-        acc_by_sell_report_dyf = DynamicFrame.fromDF(acc_by_sell_report_df, self.glue_context, "acc_by_sell_report_df")
-        self._save_output_to_redshift(acc_by_sell_report_dyf, "acc_by_sell_report_df",
-                                "s3://s3-bucket-multithreading/sec_by_sell_report/")
+        transactions_by_users_report_df = selected_df.groupBy('account_id', 'holder_name', "date").agg(sum("amount").alias("total")).repartition(1)
+        transactions_by_users_report_dyf = DynamicFrame.fromDF(transactions_by_users_report_df, self.glue_context, "transactions_by_users_report_df")
+        self._save_output_to_redshift(transactions_by_users_report_dyf, "transactions_by_users_report_df",
+                                "s3://s3-bucket-multithreading/transactions_by_users_report/")
 		# set to default
         self.sc.setLocalProperty("spark.scheduler.pool", None)
         self.logger.info("Completed account reports..")
 
-    def __create_security_report(self, selected_df):
+    def __create_subscriptions_report(self, selected_df):
         self.logger.info("Starting security reports..")
 		#  set pool local to 2 
         self.sc.setLocalProperty("spark.scheduler.pool", str("2"))
