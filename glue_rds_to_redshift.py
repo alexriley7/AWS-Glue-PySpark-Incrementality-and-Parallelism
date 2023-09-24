@@ -27,14 +27,17 @@ class JobBase(object):
     		# Reading from Crawled catalog tables and create DataFrames
         transactions_df = self.glue_context.create_dynamic_frame.from_catalog(database="mysql_to_redshift", table_name="trial_register__transaction",
                                                                                     redshift_tmp_dir=args["TempDir"],
-                                                                                    transformation_ctx="datasource0")
+                                                                                    transformation_ctx="datasource0",
+                                                                                    additional_options = {"jobBookmarkKeys":["transaction_id"],"jobBookmarkKeysSortOrder":"asc"})
         users_df = self.glue_context.create_dynamic_frame.from_catalog(database="mysql_to_redshift", table_name="users__dimension",
                                                                                 redshift_tmp_dir=args["TempDir"],
-                                                                                transformation_ctx="datasource0")
+                                                                                transformation_ctx="datasource0",
+                                                                                additional_options = {"jobBookmarkKeys":["account_id"],"jobBookmarkKeysSortOrder":"asc"})
         
         subscriptions_df = self.glue_context.create_dynamic_frame.from_catalog(database="mysql_to_redshift", table_name="subscriptions__dimension",
                                                                                     redshift_tmp_dir=args["TempDir"],
-                                                                                    transformation_ctx="datasource0")
+                                                                                    transformation_ctx="datasource0",
+                                                                                    additional_options = {"jobBookmarkKeys":["subscription_id"],"jobBookmarkKeysSortOrder":"asc"})
 
 		# Joining created dataframes and save it as parameter
 
