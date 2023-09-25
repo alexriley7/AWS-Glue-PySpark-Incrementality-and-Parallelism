@@ -8,7 +8,15 @@ AWS Glue is a serverless data integration service that makes it easy for analyti
 
 Commonly uses are jobs reading stage, performs data enrichment, does validation, and then use this not-well curated data to store into two different targets for reporting.
 
+
+
+
+
+
 While AWS Glue consolidates major data integration capabilities into a single service, some issues might happen when of the shelf data connectors are not prepared to deal with messy transactional data in incremental loads.
+
+
+
 
 This project we will discuss the use of Spark multithreading and Job Bookmarks in order to solve some common issues that might happen during the execution.
 
