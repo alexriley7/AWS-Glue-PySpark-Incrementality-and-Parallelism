@@ -5,4 +5,8 @@ In order to run this demo, please feel free to download and setup this custom Cl
 https://github.com/alexriley7/AWS-Glue-PySpark-Incrementality-and-Parallelism/blob/main/redshift-s3-cloudformation/redshift-s3-cloudformation.template
 
 
+
+
+
+
 <img src="https://github.com/alexriley7/AWS-Glue-PySpark-Incrementality-and-Parallelism/blob/main/readme/Dancing-Monkey.gif" />
